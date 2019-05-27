@@ -134,15 +134,85 @@
 /**
  * 5.3 原型继承
  */
-function func9(name) {
-    this.name = name;
+{
+    function func9(name) {
+        this.name = name;
+    }
+    func9.prototype.myName = function () {
+        return this.name;
+    }
+    function func10(name, label) {
+        func9.call(this, name);
+        this.label = label;
+    }
+    //我们创建了一个新的func10.prototype对象并关联到func9.prototype
+    func10.prototype = Object.create(func9.prototype);
+    //等价于
+    // Object.setPrototypeOf(func10.prototype, func9.prototype);可读性更高
+
+    func10.prototype.myLabel = function () {
+        return this.label;
+    }
+    var a = new func10('A', 'B');
+    console.log(a.myName());//A
+    console.log(a.myLabel());//B
+
+    // func10.prototype = func9.prototype 会让func10.prototype直接引用func9.prototype对象。因此当执行类似
+    // func10.prototype.myLabel 时会直接修改 func9.prototype对象本身。
+
+    console.log(a instanceof func9);
+    console.log(func9.prototype.isPrototypeOf(a)) // 在a的整条prototype链中是否出现过func9
 }
-func9.prototype.myName = function () {
-    return this.name;
+
+/**
+ * 5.4对象关联
+ * 现在我们知道，prototype机制就是在对象中的一个内部链接，它会引用其他的对象。
+ * 通常来说，这个链接的作用是：如果在对线上没有找到需要的属性或者方法引用，引擎就会继续在prototype关联的对象上进行查找
+ * 同理，如果后者中也没有找到需要的引用就会继续查找它的prototype。这一系列对象的链接称为“原型链”
+ */
+{
+    /**
+     * 5.4.1创建关联
+     * create会创建一个新对象并把它关联到我们指定的秀爱哪个，这样就可以充分发挥prototype机制的威力（委托）并且避免不必要的麻烦。
+     * （比如使用new的构造函数会生成.prototype 和 .constructor引用。
+     */
+    var obj2 = {
+        something: function () {
+            console.log(`tell me somewords`);
+        }
+    }
+    var obj3 = Object.create(obj2);
+    console.log(`obj3.prototype == obj2.prototype ? :${obj3.prototype == obj2.prototype}`);
+
+    obj3.something();
+    console.log(Object.create(null));//创建一个拥有空链接的对象，这个对象无法被委托
+
+    /**
+     * 5.4.2关联关系是备用。
+     * 当你给开发者设计软件时，假设要调用obj3.something(),如果obj3中并不存在something这条语句也可以正常工作的话，
+     * 你的api会变得很”神奇“，不好理解。
+     * 可使用内部委托。内部委托比起直接委托可以让api接口更加清晰。
+     */
+    obj3.doSomething = function(){
+        this.something();
+    }
+    obj3.doSomething();
 }
-function func10(name,label) {
-    func9.call(this, name);
-    this.label = label;
+
+/**
+ * 5.5小结
+ * 如果要访问对象中并不存在的一个属性，get操作就会查找对象内部prototype关联的对象，这个关联关系实际上定义了一条原型链。
+ * 在查找属性时会对它进行遍历。
+ * 所有普通对象内部都有内置的object.portotype，指向原型链的顶端，如果在原型链总找不到指定的属性就会停止。tostring,valueof
+ * 和一些通用的功能都存在于object.prototype对象上，因此语言中所有的对象都可以使用它们。
+ * 惯量两个对象最常用的方法是用new关键词进行函数调用。使用new调用函数时会把新对象的.prototype关联到其他对爱哪个。带new的函数调用通常
+ * 被称为构造函数调用，尽管他们实际上和传统面上类语言中的类头灶函数不一样。
+ * 虽然JavaScript机制和面向类语言中的类初始化和类继承很相似，但是JavaScript中的机制又一个核心区别，那就是不回进行布置。对象之间通过内部的
+ * prototype链关联。
+ * 对象之间的关系不是复制而是委托。
+ */
+{
+    console.log(`test end`);
+    console.log(obj3.prototype == obj2.prototype);//true
 }
-//我们创建了一个新的func10.prototype对象并关联到func9.prototype
-func10.prototype = Object.create(func9.prototype);
+
